@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ActivityWatch 任务看板</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: #0f0f0f; color: #fff; }
+    h1 { color: #3b82f6; }
+    .device { background: #1a1a1a; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #3b82f6; }
+    .device.offline { border-left-color: #ef4444; }
+    .device.online { border-left-color: #22c55e; }
+    .task { background: #262626; padding: 10px; margin: 5px 0; border-radius: 4px; display: flex; justify-content: space-between; }
+    .status { padding: 4px 12px; border-radius: 12px; font-size: 12px; }
+    .status.completed { background: #22c55e; }
+    .status.in-progress { background: #3b82f6; }
+    .status.pending { background: #6b7280; }
+    .refresh { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+    .refresh:hover { background: #2563eb; }
+    .timestamp { color: #888; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>🚀 ActivityWatch 任务看板</h1>
+  <button class="refresh" onclick="loadData()">🔄 刷新</button>
+  
+  <div id="devices"></div>
+  <div id="tasks"></div>
+  
+  <script>
+    async function loadData() {
+      try {
+        const res = await fetch('/tasks');
+        const data = await res.json();
+        
+        let devicesHtml = '<h2>📱 设备状态</h2>';
+        for (const [name, info] of Object.entries(data.devices)) {
+          const status = info.status === 'online' ? '🟢' : '🔴';
+          const className = info.status;
+          devicesHtml += `
+            <div class="device ${className}">
+              <strong>${status} ${name.toUpperCase()}</strong>
+              <div class="timestamp">最后在线: ${info.lastSeen || '从未'}</div>
+              ${info.currentApp ? `<div>当前应用: ${info.currentApp}</div>` : ''}
+            </div>
+          `;
+        }
+        document.getElementById('devices').innerHTML = devicesHtml;
+        
+        let tasksHtml = '<h2>📋 任务列表</h2>';
+        if (data.tasks.length === 0) {
+          tasksHtml += '<p>暂无任务</p>';
+        } else {
+          data.tasks.forEach(task => {
+            tasksHtml += `
+              <div class="task">
+                <div>
+                  <strong>${task.id}</strong>
+                  <div class="timestamp">${task.device} • ${task.updatedAt}</div>
+                </div>
+                <span class="status ${task.status}">${task.status}</span>
+              </div>
+            `;
+          });
+        }
+        document.getElementById('tasks').innerHTML = tasksHtml;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    loadData();
+    setInterval(loadData, 5000);
+  </script>
+</body>
+</html>
